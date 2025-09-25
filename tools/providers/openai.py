@@ -21,7 +21,7 @@ client = OpenAI(
 )
 
 
-def process_with_openai_gpt4_1(request, max_tokens=None, temperature=0.0):  
+def process_with_openai_gpt_oss_20B(request, max_tokens=None, temperature=0.0):  
     if max_tokens is None:
         max_tokens = 8192
     return openai_call(request, "openai/gpt-oss-20b", temperature=temperature, max_tokens=max_tokens)
@@ -54,7 +54,7 @@ def openai_call(request, model, temperature=0.0, max_tokens=None):
 
     return response.choices[0].message.content, {
         "input_tokens": response.usage.prompt_tokens,
-        "output_tokens": response.usage.completion_tokens,
+        "output_tokens": response.usage.completion_tokens,  
         "thinking_tokens": 0,
         "finish_reason": finish_reason
     }
