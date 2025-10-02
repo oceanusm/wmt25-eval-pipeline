@@ -18,11 +18,16 @@ from tqdm import tqdm
 from collections import defaultdict
 
 from tools.providers.openai import process_with_openai_gpt_oss_20B
+from tools.providers.opus import process_with_opus_en_ja, process_with_opus_en_de, process_with_opus_en_ar, process_with_opus_en_bn
 from tools.errors import FINISH_LENGTH, FINISH_STOP, ERROR_UNSUPPORTED_LANGUAGE
 
 
 SYSTEMS = {
-    'GPT-OSS-20B': process_with_openai_gpt_oss_20B
+    'GPT-OSS-20B': process_with_openai_gpt_oss_20B,
+    'OPUS-en-ja': process_with_opus_en_ja,
+    'OPUS-en-de': process_with_opus_en_de,
+    'OPUS-en-ar': process_with_opus_en_ar,
+    'OPUS-en-bn': process_with_opus_en_bn
 }
 
 def check_paragraph_alignment(source_text, translated_text):
@@ -52,17 +57,27 @@ def remove_tripple_quotes(text):
 
 
 def _process_document_level(system_name, request, translation_granularity):
-    if translation_granularity == 'document-level':
-        request['prompt'] = f"{request['prompt_instruction']}\n\n{request['segment']}"
-    elif translation_granularity == 'document-level-wrapped':
-        request['prompt'] = f"{request['prompt_instruction']}\n\n```{request['segment']}```"
-    elif translation_granularity == 'document-level-html':
-        segment = request['segment'].replace('\n\n', '\n<br>\n\n')
-        if "Please translate the following" in request['prompt_instruction']:
-            instruction = request['prompt_instruction'].replace('Please translate the following', 'Keep HTML tags in the answer. Please translate the following')
-        else:
-            raise ValueError("Prompt instruction should contain 'Please translate the following'")
-        request['prompt'] = f"{instruction}\n\n{segment}"
+    if system_name.startswith("OPUS"):
+        # If doing translation with OPUS, don't include the prompt.
+        if translation_granularity == 'document-level':
+            request['prompt'] = f"{request['segment']}"
+        elif translation_granularity == 'document-level-wrapped':
+            request['prompt'] = f"```{request['segment']}```"
+        elif translation_granularity == 'document-level-html':
+            segment = request['segment'].replace('\n\n', '\n<br>\n\n')
+            request['prompt'] = f"{segment}"
+    else:
+        if translation_granularity == 'document-level':
+            request['prompt'] = f"{request['prompt_instruction']}\n\n{request['segment']}"
+        elif translation_granularity == 'document-level-wrapped':
+            request['prompt'] = f"{request['prompt_instruction']}\n\n```{request['segment']}```"
+        elif translation_granularity == 'document-level-html':
+            segment = request['segment'].replace('\n\n', '\n<br>\n\n')
+            if "Please translate the following" in request['prompt_instruction']:
+                instruction = request['prompt_instruction'].replace('Please translate the following', 'Keep HTML tags in the answer. Please translate the following')
+            else:
+                raise ValueError("Prompt instruction should contain 'Please translate the following'")
+            request['prompt'] = f"{instruction}\n\n{segment}"
 
     answer = SYSTEMS[system_name](request)
 
@@ -88,8 +103,13 @@ def _process_line_level(system_name, request):
     seg_request = request.copy()
     highest_temperature = 0.0
     for sentence in request['segment'].split('\n'):
-        seg_request['prompt'] = f"{request['prompt_instruction']}\n\n{sentence}"
-        seg_request['segment'] = sentence
+        # If OPUS model, don't pass the prompt
+        if system_name.startswith("OPUS"):
+            seg_request['prompt'] = f"{sentence}"
+            seg_request['segment'] = sentence
+        else:
+            seg_request['prompt'] = f"{request['prompt_instruction']}\n\n{sentence}"
+            seg_request['segment'] = sentence
 
         for temperature in [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]:
             answer = SYSTEMS[system_name](seg_request, temperature=temperature)
@@ -121,8 +141,13 @@ def _process_paragraph_level(system_name, request, translation_granularity='para
     seg_request = request.copy()
     highest_temperature = 0.0
     for paragraph in request['segment'].split('\n\n'):
-        seg_request['prompt'] = f"{request['prompt_instruction']}\n\n{paragraph}"
-        seg_request['segment'] = paragraph
+        # If OPUS model, don't pass the prompt
+        if system_name.startswith("OPUS"):
+            seg_request['prompt'] = f"{paragraph}"
+            seg_request['segment'] = paragraph
+        else:
+            seg_request['prompt'] = f"{request['prompt_instruction']}\n\n{paragraph}"
+            seg_request['segment'] = paragraph
 
         answer = SYSTEMS[system_name](seg_request)
         if answer[1]['finish_reason'] == FINISH_LENGTH:
