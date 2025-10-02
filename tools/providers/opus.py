@@ -1,4 +1,5 @@
 from transformers import MarianMTModel, MarianTokenizer
+from tools.errors import FINISH_STOP, FINISH_LENGTH
 
 
 def process_with_opus_en_ja(request, max_tokens=None, temperature=0.0):
@@ -52,10 +53,9 @@ def opus_call(request, model, temperature=0.0, max_tokens=None):
     translated_texts = tokenizer.batch_decode(translated_ids, skip_special_tokens=True)
 
     return translated_texts[0], {
-        "input_tokens": None,
-        "output_tokens": None,  
+        "input_tokens": 0,
+        "output_tokens": 0,  
         "thinking_tokens": 0,
-        "finish_reason": None
+        "finish_reason": FINISH_STOP
     }
-
 
