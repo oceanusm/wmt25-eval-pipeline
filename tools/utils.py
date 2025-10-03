@@ -18,7 +18,7 @@ from tqdm import tqdm
 from collections import defaultdict
 
 from tools.providers.openai import process_with_openai_gpt_oss_20B
-from tools.providers.opus import process_with_opus_en_ja, process_with_opus_en_de, process_with_opus_en_ar, process_with_opus_en_bn
+from tools.providers.opus import process_with_opus_en_ja, process_with_opus_en_de, process_with_opus_en_ar, process_with_opus_en_bn, process_with_opus_en_bho
 from tools.errors import FINISH_LENGTH, FINISH_STOP, ERROR_UNSUPPORTED_LANGUAGE
 
 
@@ -27,7 +27,8 @@ SYSTEMS = {
     'OPUS-en-ja': process_with_opus_en_ja,
     'OPUS-en-de': process_with_opus_en_de,
     'OPUS-en-ar': process_with_opus_en_ar,
-    'OPUS-en-bn': process_with_opus_en_bn
+    'OPUS-en-bn': process_with_opus_en_bn,
+    'OPUS-en-bho': process_with_opus_en_bho
 }
 
 def check_paragraph_alignment(source_text, translated_text):

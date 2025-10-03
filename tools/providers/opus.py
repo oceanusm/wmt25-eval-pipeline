@@ -34,6 +34,16 @@ def process_with_opus_en_bn(request, max_tokens=None, temperature=0.0):
     return opus_call(request, "Helsinki-NLP/opus-mt-en-inc", temperature=temperature, max_tokens=max_tokens)
 
 
+# Bhojpuri processed with the inc model, and language label >>ben<<
+def process_with_opus_en_bho(request, max_tokens=None, temperature=0.0):
+    language_label = ">>bho<<"
+    request["prompt"] = f"{language_label} {request["prompt"]}"
+
+    if max_tokens is None:
+        max_tokens = 8192
+    return opus_call(request, "Helsinki-NLP/opus-mt-en-inc", temperature=temperature, max_tokens=max_tokens)
+
+
 def opus_call(request, model, temperature=0.0, max_tokens=None):
     # Load the pre-trained model and tokenizer
     model_name = model
