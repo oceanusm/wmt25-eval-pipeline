@@ -1,3 +1,4 @@
+import torch
 from transformers import MarianMTModel, MarianTokenizer
 from tools.errors import FINISH_STOP, FINISH_LENGTH
 
@@ -49,15 +50,26 @@ def opus_call(request, model, temperature=0.0, max_tokens=None):
     model_name = model
     model = MarianMTModel.from_pretrained(model_name)
     tokenizer = MarianTokenizer.from_pretrained(model_name)
+
+    # Use GPU
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
+    model.to(device)
     
     # Source text
     source_texts = [request["prompt"]]
 
     #  Tokenize the input texts
     inputs = tokenizer(source_texts, return_tensors="pt", padding=True, truncation=True)
+    
+    # Move inputs to the device (to avoid runtime error)
+    inputs = {k: v.to(device) for k, v in inputs.items()}
 
     # Generate translations
-    translated_ids = model.generate(inputs["input_ids"])
+    # translated_ids = model.generate(inputs["input_ids"])
+    translated_ids = model.generate(**inputs)
 
     # Decode the generated tokens to get the translated text
     translated_texts = tokenizer.batch_decode(translated_ids, skip_special_tokens=True)
